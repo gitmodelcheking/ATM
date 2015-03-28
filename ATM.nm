@@ -1,0 +1,153 @@
+pta
+
+
+module ATM
+
+start : bool init true;
+IDLE :bool init false;
+Join11 :bool init false;
+Join12 :bool init false;
+Join1 :bool init false;
+
+M11 :bool init false;
+M12 :bool init false;
+M13 :bool init false;
+M1 :bool init false;
+Eject :bool init false;
+
+Final : bool init false;
+[start] start -> (start'=false)&(IDLE'=true);
+[IDLE]  IDLE-> (IDLE'=false);
+
+[exit11] Join11=false ->(Join11'=true);
+[exit12] M11=false ->(M11'=true);
+
+[exit21] Join12=false ->(Join12'=true);
+[exit22] M12=false ->(M12'=true);
+
+[join] Join11 & Join12 ->(Join1'=true) & (Join11'=false) & (Join12'=false);
+
+[M11] M11 -> (Eject'=true);
+[M12] M12 -> (Eject'=true);
+[M13] M13 -> (Eject'=true);
+
+[BillPAY] Eject=false -> (Eject'=true);
+
+[final] Eject -> (Eject'=false) & (IDLE'=false)  &(Join11'=false) &(M11'=false) &(Join12'=false)&(M12'=false)&(Join1'=false) ;
+
+[Join1] Join1 -> (Join1'=false);
+
+endmodule
+
+module CheckCard
+start2 : bool init false;
+VerifyCard : bool init false;
+C1 : bool init false;
+CardOK : bool init false;
+NotCardOK : bool init false;
+CardVALID : bool init false;
+CardNOTVALID : bool init false;
+x1:clock;
+
+invariant
+(VerifyCard=true => x1<=8 )
+endinvariant
+[IDLE]  start2=false-> (start2'=true);
+[start2]  start2-> (VerifyCard'=true)&(start2'=false)&(x1'=0);
+[VerifyCard] VerifyCard & x1>=3-> (VerifyCard'=false)&(C1'=true);
+[C1] C1 -> 0.8:(C1'=false)& (CardOK'=true)+0.2:(C1'=false)& (NotCardOK'=true);
+[CardOK]CardOK-> (CardOK'=false) & (CardVALID'=true);
+[NotCardOK]NotCardOK-> (NotCardOK'=false) & (CardNOTVALID'=true);
+[exit11] CardVALID ->(CardVALID'=false);
+[exit12] CardNOTVALID ->(CardNOTVALID'=false);
+endmodule
+
+module CheckPin
+start3 : bool init false;
+VerifyPIN : bool init false;
+C2 : bool init false;
+PinOK : bool init false;
+NotPinOK : bool init false;
+PinVALID : bool init false;
+PinNOTVALID : bool init false;
+x2:clock;
+
+invariant
+(VerifyPIN=true => x2<=8 )
+endinvariant
+
+[IDLE]  start3=false-> (start3'=true);
+[start3]  start3-> (VerifyPIN'=true)&(start3'=false)&(x2'=0);
+[VerifyPin] VerifyPIN & x2>=4 -> (VerifyPIN'=false)&(C2'=true);
+[C2] C2 -> 0.7:(C2'=false)& (PinOK'=true)+0.3:(C2'=false)& (NotPinOK'=true);
+[PinOK]PinOK-> (PinOK'=false) & (PinVALID'=true);
+[NotPinOK]NotPinOK-> (NotPinOK'=false) & (PinNOTVALID'=true);
+[exit21] PinVALID ->(PinVALID'=false);
+[exit22] PinNOTVALID ->(PinNOTVALID'=false);
+
+endmodule
+
+
+module Operation
+
+start4 : bool init false;
+SelectAccount: bool init false;
+
+History1: bool init false;
+History2: bool init false;
+
+[Join1]start4=false -> (start4'=true);
+[start4] start4 -> (start4'=false)& (SelectAccount'=true);
+
+[SelectAccount] SelectAccount -> (SelectAccount'=false);
+[BillPAY] SelectAccount=false -> (SelectAccount'=true) ;
+
+[BillPAY] History1=false -> (History1'=true);
+
+[History1] History1 -> (History1'=false);
+
+
+[Debit] History2=false -> (History2'=true);
+
+[History2] History2 -> (History2'=false);
+endmodule
+
+module Transaction
+start6 : bool init false;
+Modify : bool init false;
+CheckBal : bool init false;
+Debit : bool init false;
+
+M21 : bool init false;
+M22 : bool init false;
+[History1] (Modify =false|CheckBal=false|Debit=false|start6=false)-> (start6'=(Modify |CheckBal|Debit)?false:true);
+[start6] start6 -> (M21'=true)& (start6'=false);
+
+[M21] M21-> (CheckBal'=true) & (M21'=false);
+[M22] M22-> (CheckBal'=true) & (M22'=false);
+[CheckBal] CheckBal-> (Modify'=true) & (Debit'=true) & (CheckBal'=false);
+
+[Modify] Modify -> (M22'=true)&(Modify'=false);
+[Debit] Debit -> (Debit'=false);
+
+endmodule
+
+module Payment
+
+start5 : bool init false;
+CashADV : bool init false;
+BillPAY : bool init false;
+
+[History2] (BillPAY=false|CashADV=false|start5=false) -> (start5'=(CashADV |BillPAY)?false:true);
+
+[SelectAccount] start5=false -> (start5'=true);
+
+[start5] start5 -> (start5'=false) &(CashADV'=true);
+
+[CashADV] CashADV -> (CashADV'=false) &(BillPAY'=true);
+
+[BillPAY] BillPAY -> (BillPAY'=false) &(CashADV'=true);
+
+
+
+endmodule
